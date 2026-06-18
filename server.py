@@ -1,6 +1,7 @@
 import asyncio
 from websockets.asyncio.server import serve
 import json
+import csv 
 
 buy_orders = []
 sell_orders = []
@@ -19,6 +20,8 @@ async def echo(websocket):
         while(len(buy_orders)>=1 and len(sell_orders)>=1 and buy_orders[0]["price"]>=sell_orders[0]["price"]):
             if(buy_orders[0]["quantity"]==sell_orders[0]["quantity"]):
                 info={
+                    "buyer": buy_orders[0]["user"],
+                    "seller": sell_orders[0]["user"],
                     "price":sell_orders[0]["price"],
                     "quantity":sell_orders[0]["quantity"]
                 }
@@ -27,6 +30,8 @@ async def echo(websocket):
                 sell_orders.pop(0)
             elif(buy_orders[0]["quantity"]>sell_orders[0]["quantity"]):
                 info={
+                    "buyer": buy_orders[0]["user"],
+                    "seller": sell_orders[0]["user"],
                     "price":sell_orders[0]["price"],
                     "quantity":sell_orders[0]["quantity"]
                 }
@@ -36,14 +41,25 @@ async def echo(websocket):
                 sell_orders.pop(0)
             elif(buy_orders[0]["quantity"]<sell_orders[0]["quantity"]):
                 info={
+                    "buyer": buy_orders[0]["user"],
+                    "seller": sell_orders[0]["user"],
                     "price":sell_orders[0]["price"],
-                    "quantity":sell_orders[0]["quantity"]
+                    "quantity":buy_orders[0]["quantity"]
                 }
                 trades.append(info)
                 val=sell_orders[0]["quantity"]-buy_orders[0]["quantity"]
                 sell_orders[0]["quantity"]=val
                 buy_orders.pop(0)
-            
+        
+        with open("orders.csv","a",newline='',encoding="utf-8") as file:
+            col = ["buyer", "seller", "price", "quantity"]
+            writer=csv.DictWriter(file,fieldnames=col)
+            if file.tell()==0:
+                writer.writeheader()
+                
+            writer.writerows(trades)
+        trades.clear()
+        
         await websocket.send("Emriniz alındı!")
 async def main():
     async with serve(echo, "localhost",9000) as server:
