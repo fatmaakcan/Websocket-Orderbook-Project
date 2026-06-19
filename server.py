@@ -3,6 +3,7 @@ from websockets.asyncio.server import serve
 import json
 import pandas as pd
 from datetime import datetime
+import os
 
 buy_orders = []
 sell_orders = []
@@ -62,15 +63,12 @@ async def echo(websocket):
                     val=sell_orders[0]["quantity"]-buy_orders[0]["quantity"]
                     sell_orders[0]["quantity"]=val
                     buy_orders.pop(0)
+                    
+                df_new_trades = pd.DataFrame([info]) 
+                file_exists = os.path.exists("orders.csv") and os.path.getsize("orders.csv") > 0
+                with open("orders.csv", mode='a', newline='', encoding='utf-8') as f:
+                    df_new_trades.to_csv(f, index=False, header=not file_exists)
             
-            if trades:
-                df_new_trades=pd.DataFrame(trades)
-                
-                try:
-                    df_existing=pd.read_csv("orders.csv")
-                    df_combined=pd.concat([df_existing,df_new_trades],ignore_index=True)
-                except FileNotFoundError:
-                    df_new_trades.to_csv("orders.csv",index=False)
                 
             state_packet={
                 "buy_orders":buy_orders,
