@@ -12,7 +12,7 @@ connected_clients=set()
 
 async def echo(websocket):
    
-    print("sunucu: bir client bağlandı!")
+    print("Server: A client has connected!")
     connected_clients.add(websocket) 
     try:
         async for message in websocket:  
@@ -82,13 +82,13 @@ async def echo(websocket):
                 except:
                     pass
             trades.clear()
-            await websocket.send("Emriniz alındı!")
+            await websocket.send("Your order has been received!")
     finally:
         connected_clients.remove(websocket)
-        print("sunucu: bir client ayrıldı.")
+        print("Server: A client has been disconnected.")
 async def main():
     async with serve(echo, "localhost",9000) as server:
-        print("sunucu ayağa kalktı, port 9000 dinleniyor...")
+        print("The server is up and running, listening on port 9000...")
         await server.serve_forever()
 
 if __name__=="__main__":
