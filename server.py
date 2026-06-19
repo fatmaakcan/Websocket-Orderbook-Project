@@ -1,7 +1,8 @@
 import asyncio
 from websockets.asyncio.server import serve
 import json
-import csv 
+import pandas as pd
+from datetime import datetime
 
 buy_orders = []
 sell_orders = []
@@ -22,8 +23,11 @@ async def echo(websocket):
                 sell_orders.append(order)
                 sell_orders.sort(key=lambda x: x["price"])
             while(len(buy_orders)>=1 and len(sell_orders)>=1 and buy_orders[0]["price"]>=sell_orders[0]["price"]):
+                current_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
                 if(buy_orders[0]["quantity"]==sell_orders[0]["quantity"]):
                     info={
+                        "time":current_time,
                         "buyer": buy_orders[0]["user"],
                         "seller": sell_orders[0]["user"],
                         "price":sell_orders[0]["price"],
@@ -35,6 +39,7 @@ async def echo(websocket):
                     
                 elif(buy_orders[0]["quantity"]>sell_orders[0]["quantity"]):
                     info={
+                        "time":current_time,
                         "buyer": buy_orders[0]["user"],
                         "seller": sell_orders[0]["user"],
                         "price":sell_orders[0]["price"],
@@ -47,6 +52,7 @@ async def echo(websocket):
                     
                 elif(buy_orders[0]["quantity"]<sell_orders[0]["quantity"]):
                     info={
+                        "time":current_time,
                         "buyer": buy_orders[0]["user"],
                         "seller": sell_orders[0]["user"],
                         "price":sell_orders[0]["price"],
@@ -57,13 +63,14 @@ async def echo(websocket):
                     sell_orders[0]["quantity"]=val
                     buy_orders.pop(0)
             
-            with open("orders.csv","a",newline='',encoding="utf-8") as file:
-                col = ["buyer", "seller", "price", "quantity"]
-                writer=csv.DictWriter(file,fieldnames=col)
-                if file.tell()==0:
-                    writer.writeheader()
-                    
-                writer.writerows(trades)
+            if trades:
+                df_new_trades=pd.DataFrame(trades)
+                
+                try:
+                    df_existing=pd.read_csv("orders.csv")
+                    df_combined=pd.concat([df_existing,df_new_trades],ignore_index=True)
+                except FileNotFoundError:
+                    df_new_trades.to_csv("orders.csv",index=False)
                 
             state_packet={
                 "buy_orders":buy_orders,
